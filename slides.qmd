@@ -910,6 +910,6 @@ Pipeline and normalised metadata will be released as Open Access resources.
 ## Questions?
 
 ::: {.smaller}
-Project website:  
-https://phytovision.vercel.app/
+Project website:
+[https://phytovision.vercel.app/](https://phytovision.vercel.app/){target="_blank"}
 :::
