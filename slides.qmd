@@ -1,7 +1,7 @@
 ---
 title: "Phyto-Vision"
 subtitle: "A Reproducible Workflow for the Computational Excavation of Global Botanical Iconography"
-author: "Your Name"
+author: "Guang Yang"
 format:
   revealjs:
     output-file: index
@@ -448,6 +448,7 @@ After extraction:
   const thumbs = new Map();
   let camera = { x: 0.5, y: 0.5, zoom: 1 };
   let dataBox = { x0: 0, y0: 0, x1: 1, y1: 1 };
+  let viewW = 0, viewH = 0;
   let scheduled = false;
   let initialised = false;
   let hoveredIdx = -1;
@@ -471,22 +472,37 @@ After extraction:
   }
 
   function resize() {
-    const r = container.getBoundingClientRect();
-    if (r.width === 0 || r.height === 0) return;
+    // Use offsetWidth/Height (CSS layout px, pre-transform) so the canvas
+    // matches the container's own coordinate space.  Reveal.js applies a
+    // CSS transform on the slide to fit the viewport — getBoundingClientRect
+    // would return *post*-transform pixels and break alignment.
+    viewW = container.offsetWidth;
+    viewH = container.offsetHeight;
+    if (viewW === 0 || viewH === 0) return;
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = Math.round(r.width * dpr);
-    canvas.height = Math.round(r.height * dpr);
-    canvas.style.width = r.width + 'px';
-    canvas.style.height = r.height + 'px';
+    canvas.width = Math.round(viewW * dpr);
+    canvas.height = Math.round(viewH * dpr);
+    // Clear any inline sizing so the stylesheet's `inset:0; width/height:100%`
+    // keeps the canvas filling the container.
+    canvas.style.width = '';
+    canvas.style.height = '';
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     requestDraw();
   }
 
-  function worldToScreen(wx, wy, r) {
-    const sx = (r.width  * camera.zoom) / Math.max(1e-6, dataBox.x1 - dataBox.x0);
-    const sy = (r.height * camera.zoom) / Math.max(1e-6, dataBox.y1 - dataBox.y0);
-    return [r.width  / 2 + (wx - camera.x) * sx,
-            r.height / 2 + (wy - camera.y) * sy];
+  function worldToScreen(wx, wy) {
+    const sx = (viewW * camera.zoom) / Math.max(1e-6, dataBox.x1 - dataBox.x0);
+    const sy = (viewH * camera.zoom) / Math.max(1e-6, dataBox.y1 - dataBox.y0);
+    return [viewW / 2 + (wx - camera.x) * sx,
+            viewH / 2 + (wy - camera.y) * sy];
+  }
+
+  // Convert a viewport mouse event into the canvas's internal CSS-px space.
+  function localFromEvent(e) {
+    const r = container.getBoundingClientRect();
+    if (r.width === 0 || r.height === 0) return [0, 0];
+    return [(e.clientX - r.left) * (viewW / r.width),
+            (e.clientY - r.top ) * (viewH / r.height)];
   }
 
   function currentThumbPx() {
@@ -498,11 +514,9 @@ After extraction:
   }
 
   function draw() {
-    if (!data) return;
-    const r = container.getBoundingClientRect();
-    if (r.width === 0 || r.height === 0) return;
+    if (!data || viewW === 0 || viewH === 0) return;
     ctx.fillStyle = '#0d1117';
-    ctx.fillRect(0, 0, r.width, r.height);
+    ctx.fillRect(0, 0, viewW, viewH);
 
     const dotR = currentDotR();
     ctx.globalAlpha = 0.55;
@@ -510,8 +524,8 @@ After extraction:
       const n = data.nodes[i];
       if (hiddenClusters.has(n.c)) continue;
       if (n.img && thumbs.has(i)) continue;
-      const [sx, sy] = worldToScreen(n.x, n.y, r);
-      if (sx < -4 || sx > r.width + 4 || sy < -4 || sy > r.height + 4) continue;
+      const [sx, sy] = worldToScreen(n.x, n.y);
+      if (sx < -4 || sx > viewW + 4 || sy < -4 || sy > viewH + 4) continue;
       ctx.fillStyle = data.colors[n.c];
       ctx.beginPath();
       ctx.arc(sx, sy, dotR, 0, Math.PI * 2);
@@ -523,9 +537,9 @@ After extraction:
     for (const [i, img] of thumbs) {
       const n = data.nodes[i];
       if (hiddenClusters.has(n.c)) continue;
-      const [sx, sy] = worldToScreen(n.x, n.y, r);
-      if (sx < -thumbPx || sx > r.width + thumbPx ||
-          sy < -thumbPx || sy > r.height + thumbPx) continue;
+      const [sx, sy] = worldToScreen(n.x, n.y);
+      if (sx < -thumbPx || sx > viewW + thumbPx ||
+          sy < -thumbPx || sy > viewH + thumbPx) continue;
       const aspect = (img.naturalWidth && img.naturalHeight)
         ? img.naturalWidth / img.naturalHeight : 1;
       let w, h;
@@ -541,7 +555,7 @@ After extraction:
     if (hoveredIdx >= 0) {
       const n = data.nodes[hoveredIdx];
       if (!hiddenClusters.has(n.c)) {
-        const [sx, sy] = worldToScreen(n.x, n.y, r);
+        const [sx, sy] = worldToScreen(n.x, n.y);
         const isThumb = n.img && thumbs.has(hoveredIdx);
         const radius = isThumb ? thumbPx * 0.66 : Math.max(7, dotR * 4);
         ctx.lineWidth = 2.5;
@@ -559,17 +573,16 @@ After extraction:
   }
 
   function hitTest(mx, my) {
-    const r = container.getBoundingClientRect();
     const dotR = currentDotR();
     const thumbPx = currentThumbPx();
     let best = -1, bestD = Infinity;
-    const maxHit = 22;
+    const maxHit = 24;
     for (let i = 0; i < data.nodes.length; i++) {
       const n = data.nodes[i];
       if (hiddenClusters.has(n.c)) continue;
-      const [sx, sy] = worldToScreen(n.x, n.y, r);
-      if (sx < -thumbPx || sx > r.width + thumbPx ||
-          sy < -thumbPx || sy > r.height + thumbPx) continue;
+      const [sx, sy] = worldToScreen(n.x, n.y);
+      if (sx < -thumbPx || sx > viewW + thumbPx ||
+          sy < -thumbPx || sy > viewH + thumbPx) continue;
       const limit = (n.img && thumbs.has(i)) ? thumbPx * 0.55 : Math.max(6, dotR * 3.5);
       const dx = sx - mx, dy = sy - my;
       const d2 = dx * dx + dy * dy;
@@ -600,11 +613,8 @@ After extraction:
     animFrame = requestAnimationFrame(step);
   }
 
-  function showTooltip(idx, clientX, clientY) {
+  function showTooltip(idx, localX, localY) {
     const n = data.nodes[idx];
-    const r = container.getBoundingClientRect();
-    const localX = clientX - r.left;
-    const localY = clientY - r.top;
     const cluster = String(n.c).padStart(2, '0');
     const colour = data.colors[n.c];
     const imgHtml = n.img ? '<img src="' + n.img + '" alt="">' : '';
@@ -617,8 +627,8 @@ After extraction:
     const tw = tooltip.offsetWidth  || 230;
     const th = tooltip.offsetHeight || 240;
     let tx = localX + 18, ty = localY + 18;
-    if (tx + tw > r.width  - 110) tx = localX - tw - 12;
-    if (ty + th > r.height - 8)   ty = localY - th - 12;
+    if (tx + tw > viewW - 110) tx = localX - tw - 12;
+    if (ty + th > viewH - 8)   ty = localY - th - 12;
     tooltip.style.left = Math.max(4, tx) + 'px';
     tooltip.style.top  = Math.max(4, ty) + 'px';
   }
@@ -677,7 +687,8 @@ After extraction:
       if (insideChrome(e.target)) return;
       if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
       dragging = true; dragMoved = false;
-      lastX = e.clientX; lastY = e.clientY;
+      const [mx, my] = localFromEvent(e);
+      lastX = mx; lastY = my;
       container.classList.add('dragging');
     });
     window.addEventListener('mouseup', () => {
@@ -686,13 +697,14 @@ After extraction:
     });
     window.addEventListener('mousemove', (e) => {
       const r = container.getBoundingClientRect();
+      const [mx, my] = localFromEvent(e);
       if (dragging) {
         dragMoved = true;
-        const sx = (r.width  * camera.zoom) / Math.max(1e-6, dataBox.x1 - dataBox.x0);
-        const sy = (r.height * camera.zoom) / Math.max(1e-6, dataBox.y1 - dataBox.y0);
-        camera.x -= (e.clientX - lastX) / sx;
-        camera.y -= (e.clientY - lastY) / sy;
-        lastX = e.clientX; lastY = e.clientY;
+        const sx = (viewW * camera.zoom) / Math.max(1e-6, dataBox.x1 - dataBox.x0);
+        const sy = (viewH * camera.zoom) / Math.max(1e-6, dataBox.y1 - dataBox.y0);
+        camera.x -= (mx - lastX) / sx;
+        camera.y -= (my - lastY) / sy;
+        lastX = mx; lastY = my;
         hideTooltip();
         if (hoveredIdx !== -1) { hoveredIdx = -1; }
         requestDraw();
@@ -705,13 +717,13 @@ After extraction:
         container.classList.remove('hovering');
         return;
       }
-      const idx = hitTest(e.clientX - r.left, e.clientY - r.top);
+      const idx = hitTest(mx, my);
       if (idx !== hoveredIdx) {
         hoveredIdx = idx;
         requestDraw();
       }
       if (idx >= 0) {
-        showTooltip(idx, e.clientX, e.clientY);
+        showTooltip(idx, mx, my);
         container.classList.add('hovering');
       } else {
         hideTooltip();
@@ -899,5 +911,5 @@ Pipeline and normalised metadata will be released as Open Access resources.
 
 ::: {.smaller}
 Project website:  
-https://phytovision.onrender.com
+https://phytovision.vercel.app/
 :::
