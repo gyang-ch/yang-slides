@@ -4,6 +4,7 @@ subtitle: "A Reproducible Workflow for the Computational Excavation of Global Bo
 author: "Your Name"
 format:
   revealjs:
+    output-file: index
     theme: simple
     slide-number: true
     transition: fade
