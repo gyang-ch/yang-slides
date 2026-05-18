@@ -65,56 +65,96 @@ Transform heterogeneous digitised botanical pages into a structured, machine-rea
 
 ## Multi-stage pipeline
 
-```{mermaid}
-%%{init: {
-  "theme": "base",
-  "themeVariables": {
-    "fontFamily": "Inter, system-ui, -apple-system, Segoe UI, sans-serif",
-    "fontSize": "18px"
-  },
-  "flowchart": {
-    "curve": "basis",
-    "nodeSpacing": 50,
-    "rankSpacing": 70,
-    "padding": 16
+```{=html}
+<style>
+  .pipeline {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+    margin-top: 28px;
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
   }
-}}%%
-flowchart TB
+  .pipeline-row {
+    display: flex;
+    align-items: stretch;
+    gap: 10px;
+    width: 100%;
+  }
+  .pipeline-step {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 26px 14px;
+    border-radius: 14px;
+    color: #fff;
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 1.25;
+    border: 1.5px solid;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
+  }
+  .pipeline-step.source  { background:#1f6feb; border-color:#0b3a8e; }
+  .pipeline-step.prep    { background:#7c3aed; border-color:#4c1d95; }
+  .pipeline-step.model   { background:#10b981; border-color:#065f46; }
+  .pipeline-step.extract { background:#0ea5e9; border-color:#075985; }
+  .pipeline-step.analyse { background:#f59e0b; border-color:#92400e; }
+  .pipeline-step.result  { background:#ef4444; border-color:#7f1d1d; }
+  .pipeline-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 30px;
+    color: #94a3b8;
+    font-size: 30px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .pipeline-wrap {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    width: 100%;
+    height: 28px;
+    padding-right: 10.5%;
+    margin: -4px 0;
+  }
+  .pipeline-down {
+    color: #94a3b8;
+    font-size: 36px;
+    font-weight: 700;
+    line-height: 1;
+  }
+</style>
 
-subgraph top [" "]
-  direction LR
-  A[Digitised Botanical Archives] --> B[Metadata Normalisation]
-  B --> C[Archival Deduplication]
-  C --> D[Illustration Detection<br>YOLOv11]
-end
+<div class="pipeline">
 
-subgraph bottom [" "]
-  direction LR
-  E[Illustration Extraction] --> F[Visual Embeddings<br>DINOv2]
-  F --> G[Similarity Analysis]
-  G --> H[Clustering with HDBSCAN]
-end
+  <div class="pipeline-row">
+    <div class="pipeline-step source">Digitised Botanical Archives</div>
+    <div class="pipeline-arrow">&rarr;</div>
+    <div class="pipeline-step prep">Metadata Normalisation</div>
+    <div class="pipeline-arrow">&rarr;</div>
+    <div class="pipeline-step prep">Archival Deduplication</div>
+    <div class="pipeline-arrow">&rarr;</div>
+    <div class="pipeline-step model">Illustration Detection<br>YOLOv11</div>
+  </div>
 
-D --> E
+  <div class="pipeline-wrap"><div class="pipeline-down">&darr;</div></div>
 
-style top fill:none,stroke:none
-style bottom fill:none,stroke:none
+  <div class="pipeline-row">
+    <div class="pipeline-step result">Clustering with HDBSCAN</div>
+    <div class="pipeline-arrow">&larr;</div>
+    <div class="pipeline-step analyse">Similarity Analysis</div>
+    <div class="pipeline-arrow">&larr;</div>
+    <div class="pipeline-step model">Visual Embeddings<br>DINOv2</div>
+    <div class="pipeline-arrow">&larr;</div>
+    <div class="pipeline-step extract">Illustration Extraction</div>
+  </div>
 
-classDef source  fill:#1f6feb,stroke:#0b3a8e,stroke-width:1.5px,color:#ffffff,rx:8,ry:8
-classDef prep    fill:#7c3aed,stroke:#4c1d95,stroke-width:1.5px,color:#ffffff,rx:8,ry:8
-classDef model   fill:#10b981,stroke:#065f46,stroke-width:1.5px,color:#ffffff,rx:8,ry:8
-classDef extract fill:#0ea5e9,stroke:#075985,stroke-width:1.5px,color:#ffffff,rx:8,ry:8
-classDef analyse fill:#f59e0b,stroke:#92400e,stroke-width:1.5px,color:#ffffff,rx:8,ry:8
-classDef result  fill:#ef4444,stroke:#7f1d1d,stroke-width:1.5px,color:#ffffff,rx:8,ry:8
-
-class A source
-class B,C prep
-class D,F model
-class E extract
-class G analyse
-class H result
-
-linkStyle default stroke:#94a3b8,stroke-width:2.5px,fill:none
+</div>
 ```
 
 ---
@@ -234,8 +274,10 @@ After extraction:
     overflow: hidden;
     cursor: grab;
     user-select: none;
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
   }
-  #umap-viz.dragging { cursor: grabbing; }
+  #umap-viz.dragging { cursor: grabbing !important; }
+  #umap-viz.hovering { cursor: pointer; }
   #umap-canvas {
     position: absolute;
     inset: 0;
@@ -254,10 +296,139 @@ After extraction:
     text-align: center;
     padding: 20px;
   }
+  #umap-tooltip {
+    position: absolute;
+    display: none;
+    background: rgba(13, 17, 23, 0.96);
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 6px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+    pointer-events: none;
+    z-index: 6;
+  }
+  #umap-tooltip img {
+    display: block;
+    max-width: 220px;
+    max-height: 220px;
+    border-radius: 4px;
+    background: #0d1117;
+  }
+  #umap-tooltip .tip-meta {
+    color: #c9d1d9;
+    font-size: 11px;
+    padding: 6px 4px 2px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  #umap-tooltip .tip-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  #umap-legend {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    bottom: 10px;
+    width: 100px;
+    background: rgba(13, 17, 23, 0.72);
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 6px 4px;
+    overflow-y: auto;
+    z-index: 4;
+    color: #c9d1d9;
+    font-size: 10.5px;
+  }
+  #umap-legend::-webkit-scrollbar { width: 6px; }
+  #umap-legend::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
+  #umap-legend .lg-title {
+    font-weight: 600;
+    text-align: center;
+    padding: 2px 0 6px;
+    border-bottom: 1px solid #30363d;
+    margin-bottom: 4px;
+  }
+  #umap-legend .lg-actions {
+    display: flex;
+    gap: 4px;
+    padding: 0 2px 5px;
+    border-bottom: 1px solid #30363d;
+    margin-bottom: 4px;
+  }
+  #umap-legend .lg-actions button {
+    flex: 1;
+    background: transparent;
+    border: 1px solid #30363d;
+    color: #c9d1d9;
+    border-radius: 4px;
+    font-size: 9.5px;
+    padding: 3px 0;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  #umap-legend .lg-actions button:hover { background: rgba(255,255,255,0.06); }
+  #umap-legend .lg-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 5px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.12s;
+  }
+  #umap-legend .lg-item:hover { background: rgba(255,255,255,0.06); }
+  #umap-legend .lg-dot {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+  }
+  #umap-legend .lg-num { font-variant-numeric: tabular-nums; }
+  #umap-legend .lg-cnt {
+    margin-left: auto;
+    color: #6e7681;
+    font-size: 9.5px;
+    font-variant-numeric: tabular-nums;
+  }
+  #umap-legend .lg-item.lg-off { opacity: 0.32; }
+  #umap-legend .lg-item.lg-off .lg-dot { background: transparent !important; }
+  #umap-reset {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(13, 17, 23, 0.85);
+    color: #c9d1d9;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 5px 11px;
+    font-size: 11px;
+    cursor: pointer;
+    z-index: 4;
+    font-family: inherit;
+  }
+  #umap-reset:hover { background: rgba(31, 41, 55, 0.95); color: #fff; }
+  #umap-hint {
+    position: absolute;
+    bottom: 8px;
+    left: 12px;
+    color: #6e7681;
+    font-size: 10.5px;
+    pointer-events: none;
+    z-index: 3;
+  }
 </style>
 
 <div id="umap-viz">
   <canvas id="umap-canvas"></canvas>
+  <button id="umap-reset" type="button">Reset view</button>
+  <div id="umap-legend"></div>
+  <div id="umap-tooltip"></div>
+  <div id="umap-hint">hover&nbsp;·&nbsp;click to zoom in&nbsp;·&nbsp;drag to pan&nbsp;·&nbsp;scroll to zoom&nbsp;·&nbsp;click legend to toggle</div>
   <div id="umap-error"></div>
 </div>
 
@@ -265,6 +436,9 @@ After extraction:
 (function () {
   const container = document.getElementById('umap-viz');
   const canvas = document.getElementById('umap-canvas');
+  const tooltip = document.getElementById('umap-tooltip');
+  const legendEl = document.getElementById('umap-legend');
+  const resetBtn = document.getElementById('umap-reset');
   const errorEl = document.getElementById('umap-error');
   if (!container || !canvas || container.dataset.bound) return;
   container.dataset.bound = '1';
@@ -276,12 +450,19 @@ After extraction:
   let dataBox = { x0: 0, y0: 0, x1: 1, y1: 1 };
   let scheduled = false;
   let initialised = false;
+  let hoveredIdx = -1;
+  const hiddenClusters = new Set();
+  let animFrame = null;
 
-  function fitCameraToData() {
-    camera.x = (dataBox.x0 + dataBox.x1) / 2;
-    camera.y = (dataBox.y0 + dataBox.y1) / 2;
-    camera.zoom = 1;
+  function defaultCamera() {
+    return {
+      x: (dataBox.x0 + dataBox.x1) / 2,
+      y: (dataBox.y0 + dataBox.y1) / 2,
+      zoom: 1,
+    };
   }
+
+  function fitCameraToData() { Object.assign(camera, defaultCamera()); }
 
   function requestDraw() {
     if (scheduled) return;
@@ -298,7 +479,6 @@ After extraction:
     canvas.style.width = r.width + 'px';
     canvas.style.height = r.height + 'px';
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    if (data) fitCameraToData();
     requestDraw();
   }
 
@@ -309,6 +489,14 @@ After extraction:
             r.height / 2 + (wy - camera.y) * sy];
   }
 
+  function currentThumbPx() {
+    return Math.max(28, Math.min(120, 42 * Math.sqrt(camera.zoom)));
+  }
+
+  function currentDotR() {
+    return Math.max(1.0, 1.4 * Math.sqrt(camera.zoom));
+  }
+
   function draw() {
     if (!data) return;
     const r = container.getBoundingClientRect();
@@ -316,10 +504,11 @@ After extraction:
     ctx.fillStyle = '#0d1117';
     ctx.fillRect(0, 0, r.width, r.height);
 
-    const dotR = Math.max(1.0, 1.4 * Math.sqrt(camera.zoom));
+    const dotR = currentDotR();
     ctx.globalAlpha = 0.55;
     for (let i = 0; i < data.nodes.length; i++) {
       const n = data.nodes[i];
+      if (hiddenClusters.has(n.c)) continue;
       if (n.img && thumbs.has(i)) continue;
       const [sx, sy] = worldToScreen(n.x, n.y, r);
       if (sx < -4 || sx > r.width + 4 || sy < -4 || sy > r.height + 4) continue;
@@ -330,9 +519,10 @@ After extraction:
     }
     ctx.globalAlpha = 1;
 
-    const thumbPx = Math.max(28, Math.min(110, 42 * Math.sqrt(camera.zoom)));
+    const thumbPx = currentThumbPx();
     for (const [i, img] of thumbs) {
       const n = data.nodes[i];
+      if (hiddenClusters.has(n.c)) continue;
       const [sx, sy] = worldToScreen(n.x, n.y, r);
       if (sx < -thumbPx || sx > r.width + thumbPx ||
           sy < -thumbPx || sy > r.height + thumbPx) continue;
@@ -347,29 +537,209 @@ After extraction:
       ctx.fillRect(sx - w / 2 - 1, sy - h / 2 - 1, w + 2, h + 2);
       try { ctx.drawImage(img, sx - w / 2, sy - h / 2, w, h); } catch (e) {}
     }
+
+    if (hoveredIdx >= 0) {
+      const n = data.nodes[hoveredIdx];
+      if (!hiddenClusters.has(n.c)) {
+        const [sx, sy] = worldToScreen(n.x, n.y, r);
+        const isThumb = n.img && thumbs.has(hoveredIdx);
+        const radius = isThumb ? thumbPx * 0.66 : Math.max(7, dotR * 4);
+        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(sx, sy, radius, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = data.colors[n.c];
+        ctx.beginPath();
+        ctx.arc(sx, sy, radius + 4, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+  }
+
+  function hitTest(mx, my) {
+    const r = container.getBoundingClientRect();
+    const dotR = currentDotR();
+    const thumbPx = currentThumbPx();
+    let best = -1, bestD = Infinity;
+    const maxHit = 22;
+    for (let i = 0; i < data.nodes.length; i++) {
+      const n = data.nodes[i];
+      if (hiddenClusters.has(n.c)) continue;
+      const [sx, sy] = worldToScreen(n.x, n.y, r);
+      if (sx < -thumbPx || sx > r.width + thumbPx ||
+          sy < -thumbPx || sy > r.height + thumbPx) continue;
+      const limit = (n.img && thumbs.has(i)) ? thumbPx * 0.55 : Math.max(6, dotR * 3.5);
+      const dx = sx - mx, dy = sy - my;
+      const d2 = dx * dx + dy * dy;
+      if (d2 < limit * limit && d2 < maxHit * maxHit && d2 < bestD) {
+        bestD = d2;
+        best = i;
+      }
+    }
+    return best;
+  }
+
+  function animateCamera(target, duration) {
+    duration = duration || 450;
+    const from = { x: camera.x, y: camera.y, zoom: camera.zoom };
+    const start = performance.now();
+    if (animFrame) cancelAnimationFrame(animFrame);
+    const ease = (t) => 1 - Math.pow(1 - t, 3);
+    const step = (now) => {
+      const t = Math.min(1, (now - start) / duration);
+      const e = ease(t);
+      camera.x    = from.x    + (target.x    - from.x   ) * e;
+      camera.y    = from.y    + (target.y    - from.y   ) * e;
+      camera.zoom = from.zoom + (target.zoom - from.zoom) * e;
+      draw();
+      if (t < 1) animFrame = requestAnimationFrame(step);
+      else animFrame = null;
+    };
+    animFrame = requestAnimationFrame(step);
+  }
+
+  function showTooltip(idx, clientX, clientY) {
+    const n = data.nodes[idx];
+    const r = container.getBoundingClientRect();
+    const localX = clientX - r.left;
+    const localY = clientY - r.top;
+    const cluster = String(n.c).padStart(2, '0');
+    const colour = data.colors[n.c];
+    const imgHtml = n.img ? '<img src="' + n.img + '" alt="">' : '';
+    tooltip.innerHTML =
+      imgHtml +
+      '<div class="tip-meta">' +
+      '<span class="tip-dot" style="background:' + colour + '"></span>' +
+      'Cluster ' + cluster + '</div>';
+    tooltip.style.display = 'block';
+    const tw = tooltip.offsetWidth  || 230;
+    const th = tooltip.offsetHeight || 240;
+    let tx = localX + 18, ty = localY + 18;
+    if (tx + tw > r.width  - 110) tx = localX - tw - 12;
+    if (ty + th > r.height - 8)   ty = localY - th - 12;
+    tooltip.style.left = Math.max(4, tx) + 'px';
+    tooltip.style.top  = Math.max(4, ty) + 'px';
+  }
+
+  function hideTooltip() { tooltip.style.display = 'none'; }
+
+  function buildLegend() {
+    const items = data.colors.map((c, i) => {
+      const count = (data.cluster_counts && data.cluster_counts[i]) || 0;
+      return '<div class="lg-item" data-cluster="' + i + '">' +
+        '<div class="lg-dot" style="background:' + c + '"></div>' +
+        '<div class="lg-num">' + String(i).padStart(2, '0') + '</div>' +
+        '<div class="lg-cnt">' + count + '</div>' +
+        '</div>';
+    }).join('');
+    legendEl.innerHTML =
+      '<div class="lg-title">Clusters &middot; k=' + data.k + '</div>' +
+      '<div class="lg-actions">' +
+        '<button data-act="all">All</button>' +
+        '<button data-act="none">None</button>' +
+      '</div>' +
+      items;
+    legendEl.querySelectorAll('.lg-item').forEach((el) => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const c = parseInt(el.dataset.cluster, 10);
+        if (hiddenClusters.has(c)) hiddenClusters.delete(c);
+        else hiddenClusters.add(c);
+        el.classList.toggle('lg-off', hiddenClusters.has(c));
+        if (hoveredIdx >= 0 && hiddenClusters.has(data.nodes[hoveredIdx].c)) {
+          hoveredIdx = -1; hideTooltip();
+        }
+        requestDraw();
+      });
+    });
+    legendEl.querySelectorAll('.lg-actions button').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (btn.dataset.act === 'all') hiddenClusters.clear();
+        else for (let i = 0; i < data.k; i++) hiddenClusters.add(i);
+        legendEl.querySelectorAll('.lg-item').forEach((el) => {
+          const c = parseInt(el.dataset.cluster, 10);
+          el.classList.toggle('lg-off', hiddenClusters.has(c));
+        });
+        hoveredIdx = -1; hideTooltip();
+        requestDraw();
+      });
+    });
   }
 
   function bindInteractions() {
-    let dragging = false, lastX = 0, lastY = 0;
+    let dragging = false, lastX = 0, lastY = 0, dragMoved = false;
+    const insideChrome = (target) => !!target.closest('#umap-legend, #umap-reset, #umap-tooltip');
+
     container.addEventListener('mousedown', (e) => {
-      dragging = true; lastX = e.clientX; lastY = e.clientY;
+      if (insideChrome(e.target)) return;
+      if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
+      dragging = true; dragMoved = false;
+      lastX = e.clientX; lastY = e.clientY;
       container.classList.add('dragging');
     });
     window.addEventListener('mouseup', () => {
-      dragging = false; container.classList.remove('dragging');
+      dragging = false;
+      container.classList.remove('dragging');
     });
     window.addEventListener('mousemove', (e) => {
-      if (!dragging) return;
       const r = container.getBoundingClientRect();
-      const sx = (r.width  * camera.zoom) / Math.max(1e-6, dataBox.x1 - dataBox.x0);
-      const sy = (r.height * camera.zoom) / Math.max(1e-6, dataBox.y1 - dataBox.y0);
-      camera.x -= (e.clientX - lastX) / sx;
-      camera.y -= (e.clientY - lastY) / sy;
-      lastX = e.clientX; lastY = e.clientY;
+      if (dragging) {
+        dragMoved = true;
+        const sx = (r.width  * camera.zoom) / Math.max(1e-6, dataBox.x1 - dataBox.x0);
+        const sy = (r.height * camera.zoom) / Math.max(1e-6, dataBox.y1 - dataBox.y0);
+        camera.x -= (e.clientX - lastX) / sx;
+        camera.y -= (e.clientY - lastY) / sy;
+        lastX = e.clientX; lastY = e.clientY;
+        hideTooltip();
+        if (hoveredIdx !== -1) { hoveredIdx = -1; }
+        requestDraw();
+        return;
+      }
+      if (e.clientX < r.left || e.clientX > r.right ||
+          e.clientY < r.top  || e.clientY > r.bottom ||
+          insideChrome(e.target)) {
+        if (hoveredIdx !== -1) { hoveredIdx = -1; hideTooltip(); requestDraw(); }
+        container.classList.remove('hovering');
+        return;
+      }
+      const idx = hitTest(e.clientX - r.left, e.clientY - r.top);
+      if (idx !== hoveredIdx) {
+        hoveredIdx = idx;
+        requestDraw();
+      }
+      if (idx >= 0) {
+        showTooltip(idx, e.clientX, e.clientY);
+        container.classList.add('hovering');
+      } else {
+        hideTooltip();
+        container.classList.remove('hovering');
+      }
+    });
+    container.addEventListener('mouseleave', () => {
+      if (hoveredIdx !== -1) hoveredIdx = -1;
+      hideTooltip();
+      container.classList.remove('hovering');
       requestDraw();
     });
+
+    container.addEventListener('click', (e) => {
+      if (insideChrome(e.target)) return;
+      if (dragMoved) return;
+      if (hoveredIdx < 0) return;
+      const n = data.nodes[hoveredIdx];
+      animateCamera({
+        x: n.x,
+        y: n.y,
+        zoom: Math.min(80, camera.zoom * 2.4),
+      });
+    });
+
     container.addEventListener('wheel', (e) => {
       e.preventDefault();
+      if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
       const factor = Math.exp(-e.deltaY * 0.0015);
       const r = container.getBoundingClientRect();
       const mx = (e.clientX - r.left) / r.width;
@@ -381,6 +751,12 @@ After extraction:
       camera.y = wy - (my - 0.5) / camera.zoom;
       requestDraw();
     }, { passive: false });
+
+    resetBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      animateCamera(defaultCamera(), 600);
+    });
+
     window.addEventListener('resize', resize);
   }
 
@@ -409,10 +785,10 @@ After extraction:
     dataBox = { x0, y0, x1, y1 };
     fitCameraToData();
 
+    buildLegend();
     resize();
     requestDraw();
 
-    // Stream thumbnails from Azure (a few at a time to be friendly).
     const queue = [];
     data.nodes.forEach((n, i) => { if (n.img) queue.push([i, n.img]); });
     const MAX_PARALLEL = 8;
@@ -432,7 +808,6 @@ After extraction:
     bindInteractions();
   }
 
-  // Defer init until the canvas is actually visible (reveal.js hides off-screen slides).
   const io = new IntersectionObserver((entries) => {
     for (const e of entries) {
       if (e.isIntersecting && e.intersectionRatio > 0) {
