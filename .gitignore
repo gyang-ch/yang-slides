@@ -1,0 +1,33 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Quarto build artefacts (kept locally; slides.html is committed for Vercel)
+.quarto/
+_freeze/
+_site/
+
+# Large source data — regenerate umap_data.json locally with prepare_umap_data.py
+illustrations.embeddings.jsonl
+illustrations.public.jsonl
+illustrations.public.jsonl.tmp
+
+# Outputs of visualize_umap.py (large PNG, not needed for the deck)
+illustrations_umap.png
+
+# Editor / OS
+.vscode/
+.idea/
+*.swp
+*.log
+
+# Vercel
+.vercel/
+node_modules/

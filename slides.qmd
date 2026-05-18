@@ -1,0 +1,527 @@
+---
+title: "Phyto-Vision"
+subtitle: "A Reproducible Workflow for the Computational Excavation of Global Botanical Iconography"
+author: "Your Name"
+format:
+  revealjs:
+    theme: simple
+    slide-number: true
+    transition: fade
+    incremental: true
+    chalkboard: false
+    toc: false
+    controls: true
+    center: false
+    width: 1400
+    height: 800
+execute:
+  echo: false
+---
+
+
+# Research Context
+
+## Botanical archives as visual systems {.smaller}
+
+- Botanical knowledge historically circulated through **image–text assemblages**
+- Illustrations functioned as tools of:
+  - taxonomy
+  - classification
+  - imperial knowledge-making
+- European botanical illustration emphasised:
+  - standardisation
+  - morphological comparison
+  - isolated specimens
+- Parallel traditions also existed:
+  - Chinese *Bencao*
+  - Japanese illustrated herbals
+  - medicinal manuscripts
+
+::: {.notes}
+Emphasise that this project is not only technical, but also historical and epistemological.
+:::
+
+---
+
+# Project Aim
+
+## What is *Phyto-Vision*?
+
+Phyto-Vision is a reproducible computational workflow for:
+
+- metadata normalisation
+- archival deduplication
+- automated botanical illustration extraction
+- visual similarity analysis
+
+## Goal
+
+Transform heterogeneous digitised botanical pages into a structured, machine-readable visual corpus.
+
+---
+
+# Workflow Overview
+
+## Multi-stage pipeline
+
+```{mermaid}
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "fontFamily": "Inter, system-ui, -apple-system, Segoe UI, sans-serif",
+    "fontSize": "18px"
+  },
+  "flowchart": {
+    "curve": "basis",
+    "nodeSpacing": 50,
+    "rankSpacing": 70,
+    "padding": 16
+  }
+}}%%
+flowchart TB
+
+subgraph top [" "]
+  direction LR
+  A[Digitised Botanical Archives] --> B[Metadata Normalisation]
+  B --> C[Archival Deduplication]
+  C --> D[Illustration Detection<br>YOLOv11]
+end
+
+subgraph bottom [" "]
+  direction LR
+  E[Illustration Extraction] --> F[Visual Embeddings<br>DINOv2]
+  F --> G[Similarity Analysis]
+  G --> H[Clustering with HDBSCAN]
+end
+
+D --> E
+
+style top fill:none,stroke:none
+style bottom fill:none,stroke:none
+
+classDef source  fill:#1f6feb,stroke:#0b3a8e,stroke-width:1.5px,color:#ffffff,rx:8,ry:8
+classDef prep    fill:#7c3aed,stroke:#4c1d95,stroke-width:1.5px,color:#ffffff,rx:8,ry:8
+classDef model   fill:#10b981,stroke:#065f46,stroke-width:1.5px,color:#ffffff,rx:8,ry:8
+classDef extract fill:#0ea5e9,stroke:#075985,stroke-width:1.5px,color:#ffffff,rx:8,ry:8
+classDef analyse fill:#f59e0b,stroke:#92400e,stroke-width:1.5px,color:#ffffff,rx:8,ry:8
+classDef result  fill:#ef4444,stroke:#7f1d1d,stroke-width:1.5px,color:#ffffff,rx:8,ry:8
+
+class A source
+class B,C prep
+class D,F model
+class E extract
+class G analyse
+class H result
+
+linkStyle default stroke:#94a3b8,stroke-width:2.5px,fill:none
+```
+
+---
+
+# Metadata and Deduplication
+
+## Building interoperable archives
+
+- Metadata schema adapted from the *ZuantuSet* workflow
+- Descriptive fields normalised into machine-readable formats
+- Duplicate editions identified through image collation techniques
+- Supports:
+  - longitudinal comparison
+  - cross-cultural analysis
+  - scalable archival integration
+
+---
+
+# Iconographic Extraction
+
+## YOLOv11 object detection
+
+- Seed corpus:
+  - 781 manually annotated illustrations
+- Sources included:
+  - Library of Congress
+  - Bibliothèque nationale de France
+  - Royal Horticultural Society
+  - National Archives of Japan
+  - University of Tokyo Library
+
+## Data augmentation
+
+- horizontal flipping
+- random cropping
+- noise injection
+
+Expanded training set:
+**1,875 images**
+
+---
+
+# Annotation Workflow
+
+## Manual annotation in Roboflow
+
+![](figure1.jpeg){width=80%}
+
+::: {.smaller}
+Image annotation workflow used for training the detection model.
+:::
+
+---
+
+# Model Performance
+
+## Round 1 Training Results
+
+- mAP@50: **96.9%**
+- Precision: **95.5%**
+- Recall: **90.3%**
+
+## Iterative refinement
+
+- Applied model to 391 additional pages
+- Manual correction of predictions
+- Added hard negative samples
+- Expanded dataset to:
+  - **2,815 images**
+
+---
+
+# Training Metrics
+
+![](figure2.png){width=78%}
+
+::: {.smaller}
+Training performance and evaluation metrics for the fine-tuned YOLOv11 model.
+:::
+
+---
+
+# Visual Embedding Analysis
+
+## Beyond detection
+
+After extraction:
+
+- Illustrations converted into embeddings using:
+  - **DINOv2 ViT-B/14**
+- Similarity measured using:
+  - cosine similarity
+- Clustering performed with:
+  - HDBSCAN
+
+## Enables
+
+- similarity retrieval
+- visual grouping
+- cross-cultural comparison
+- unsupervised pattern discovery
+
+## UMAP network of illustrations {.smaller}
+
+```{=html}
+<style>
+  .reveal section:has(#umap-viz) > h2 {
+    margin: 0 0 0.15em 0;
+    font-size: 1.4em;
+  }
+  #umap-viz {
+    position: relative;
+    width: 100%;
+    height: 720px;
+    background: #0d1117;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: grab;
+    user-select: none;
+  }
+  #umap-viz.dragging { cursor: grabbing; }
+  #umap-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  #umap-error {
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    color: #f87171;
+    font-size: 14px;
+    text-align: center;
+    padding: 20px;
+  }
+</style>
+
+<div id="umap-viz">
+  <canvas id="umap-canvas"></canvas>
+  <div id="umap-error"></div>
+</div>
+
+<script>
+(function () {
+  const container = document.getElementById('umap-viz');
+  const canvas = document.getElementById('umap-canvas');
+  const errorEl = document.getElementById('umap-error');
+  if (!container || !canvas || container.dataset.bound) return;
+  container.dataset.bound = '1';
+
+  const ctx = canvas.getContext('2d');
+  let data = null;
+  const thumbs = new Map();
+  let camera = { x: 0.5, y: 0.5, zoom: 1 };
+  let dataBox = { x0: 0, y0: 0, x1: 1, y1: 1 };
+  let scheduled = false;
+  let initialised = false;
+
+  function fitCameraToData() {
+    camera.x = (dataBox.x0 + dataBox.x1) / 2;
+    camera.y = (dataBox.y0 + dataBox.y1) / 2;
+    camera.zoom = 1;
+  }
+
+  function requestDraw() {
+    if (scheduled) return;
+    scheduled = true;
+    requestAnimationFrame(() => { scheduled = false; draw(); });
+  }
+
+  function resize() {
+    const r = container.getBoundingClientRect();
+    if (r.width === 0 || r.height === 0) return;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.round(r.width * dpr);
+    canvas.height = Math.round(r.height * dpr);
+    canvas.style.width = r.width + 'px';
+    canvas.style.height = r.height + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (data) fitCameraToData();
+    requestDraw();
+  }
+
+  function worldToScreen(wx, wy, r) {
+    const sx = (r.width  * camera.zoom) / Math.max(1e-6, dataBox.x1 - dataBox.x0);
+    const sy = (r.height * camera.zoom) / Math.max(1e-6, dataBox.y1 - dataBox.y0);
+    return [r.width  / 2 + (wx - camera.x) * sx,
+            r.height / 2 + (wy - camera.y) * sy];
+  }
+
+  function draw() {
+    if (!data) return;
+    const r = container.getBoundingClientRect();
+    if (r.width === 0 || r.height === 0) return;
+    ctx.fillStyle = '#0d1117';
+    ctx.fillRect(0, 0, r.width, r.height);
+
+    const dotR = Math.max(1.0, 1.4 * Math.sqrt(camera.zoom));
+    ctx.globalAlpha = 0.55;
+    for (let i = 0; i < data.nodes.length; i++) {
+      const n = data.nodes[i];
+      if (n.img && thumbs.has(i)) continue;
+      const [sx, sy] = worldToScreen(n.x, n.y, r);
+      if (sx < -4 || sx > r.width + 4 || sy < -4 || sy > r.height + 4) continue;
+      ctx.fillStyle = data.colors[n.c];
+      ctx.beginPath();
+      ctx.arc(sx, sy, dotR, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    const thumbPx = Math.max(28, Math.min(110, 42 * Math.sqrt(camera.zoom)));
+    for (const [i, img] of thumbs) {
+      const n = data.nodes[i];
+      const [sx, sy] = worldToScreen(n.x, n.y, r);
+      if (sx < -thumbPx || sx > r.width + thumbPx ||
+          sy < -thumbPx || sy > r.height + thumbPx) continue;
+      const aspect = (img.naturalWidth && img.naturalHeight)
+        ? img.naturalWidth / img.naturalHeight : 1;
+      let w, h;
+      if (aspect >= 1) { w = thumbPx; h = thumbPx / aspect; }
+      else { h = thumbPx; w = thumbPx * aspect; }
+      ctx.fillStyle = data.colors[n.c];
+      ctx.fillRect(sx - w / 2 - 2, sy - h / 2 - 2, w + 4, h + 4);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(sx - w / 2 - 1, sy - h / 2 - 1, w + 2, h + 2);
+      try { ctx.drawImage(img, sx - w / 2, sy - h / 2, w, h); } catch (e) {}
+    }
+  }
+
+  function bindInteractions() {
+    let dragging = false, lastX = 0, lastY = 0;
+    container.addEventListener('mousedown', (e) => {
+      dragging = true; lastX = e.clientX; lastY = e.clientY;
+      container.classList.add('dragging');
+    });
+    window.addEventListener('mouseup', () => {
+      dragging = false; container.classList.remove('dragging');
+    });
+    window.addEventListener('mousemove', (e) => {
+      if (!dragging) return;
+      const r = container.getBoundingClientRect();
+      const sx = (r.width  * camera.zoom) / Math.max(1e-6, dataBox.x1 - dataBox.x0);
+      const sy = (r.height * camera.zoom) / Math.max(1e-6, dataBox.y1 - dataBox.y0);
+      camera.x -= (e.clientX - lastX) / sx;
+      camera.y -= (e.clientY - lastY) / sy;
+      lastX = e.clientX; lastY = e.clientY;
+      requestDraw();
+    });
+    container.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const factor = Math.exp(-e.deltaY * 0.0015);
+      const r = container.getBoundingClientRect();
+      const mx = (e.clientX - r.left) / r.width;
+      const my = (e.clientY - r.top) / r.height;
+      const wx = camera.x + (mx - 0.5) / camera.zoom;
+      const wy = camera.y + (my - 0.5) / camera.zoom;
+      camera.zoom = Math.max(0.5, Math.min(80, camera.zoom * factor));
+      camera.x = wx - (mx - 0.5) / camera.zoom;
+      camera.y = wy - (my - 0.5) / camera.zoom;
+      requestDraw();
+    }, { passive: false });
+    window.addEventListener('resize', resize);
+  }
+
+  async function init() {
+    if (initialised) { resize(); return; }
+    initialised = true;
+    try {
+      const res = await fetch('umap_data.json');
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      data = await res.json();
+    } catch (e) {
+      errorEl.style.display = 'flex';
+      errorEl.innerHTML =
+        'Could not load umap_data.json &mdash; serve the slides via a ' +
+        'local web server (e.g. <code>quarto preview</code>).';
+      return;
+    }
+
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const n of data.nodes) {
+      if (n.x < x0) x0 = n.x;
+      if (n.y < y0) y0 = n.y;
+      if (n.x > x1) x1 = n.x;
+      if (n.y > y1) y1 = n.y;
+    }
+    dataBox = { x0, y0, x1, y1 };
+    fitCameraToData();
+
+    resize();
+    requestDraw();
+
+    // Stream thumbnails from Azure (a few at a time to be friendly).
+    const queue = [];
+    data.nodes.forEach((n, i) => { if (n.img) queue.push([i, n.img]); });
+    const MAX_PARALLEL = 8;
+    let inflight = 0, cursor = 0;
+    function pump() {
+      while (inflight < MAX_PARALLEL && cursor < queue.length) {
+        const [idx, url] = queue[cursor++];
+        inflight++;
+        const im = new Image();
+        im.onload = () => { thumbs.set(idx, im); inflight--; requestDraw(); pump(); };
+        im.onerror = () => { inflight--; pump(); };
+        im.src = url;
+      }
+    }
+    pump();
+
+    bindInteractions();
+  }
+
+  // Defer init until the canvas is actually visible (reveal.js hides off-screen slides).
+  const io = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      if (e.isIntersecting && e.intersectionRatio > 0) {
+        init();
+        io.disconnect();
+        break;
+      }
+    }
+  }, { threshold: 0.01 });
+  io.observe(container);
+
+  if (typeof Reveal !== 'undefined' && Reveal.on) {
+    Reveal.on('slidechanged', () => setTimeout(() => { if (initialised) resize(); }, 40));
+    Reveal.on('resize', () => { if (initialised) resize(); });
+  }
+})();
+</script>
+```
+
+---
+
+# Results and Interpretation
+
+## What becomes possible?
+
+Phyto-Vision enables large-scale analysis of:
+
+- visual standardisation
+- page composition
+- illustration conventions
+- cross-cultural botanical representation
+
+## Key idea
+
+Historical visual logics become computationally analysable.
+
+---
+
+# Prediction Results
+
+![](figure3.jpg){width=82%}
+
+::: {.smaller}
+Example outputs from the botanical illustration detection system.
+:::
+
+---
+
+# Contribution
+
+## Digital Plant Humanities
+
+Phyto-Vision contributes:
+
+- a reproducible workflow
+- computational access to botanical iconography
+- scalable cross-archive comparison
+- integration of computer vision with historical inquiry
+
+## Broader significance
+
+The project connects:
+
+- computer vision
+- archival studies
+- history of botany
+- multimodal Digital Humanities
+
+---
+
+# Conclusion
+
+## Phyto-Vision
+
+- combines archival methods with AI-based image analysis
+- transforms historical botanical pages into structured visual data
+- supports longitudinal and cross-cultural analysis
+- provides an Open Access computational framework for botanical archives
+
+::: {.smaller}
+Pipeline and normalised metadata will be released as Open Access resources.
+:::
+
+---
+
+# Thank You
+
+## Questions?
+
+::: {.smaller}
+Project website:  
+https://phytovision.onrender.com
+:::
